@@ -66,6 +66,14 @@ tested_molecules.to_csv('tested_molecules_with_descriptors.csv', index=False)
 # load KNIME reduced dataset
 knime_filtered = pd.read_csv(KNIME_CSV)
 
+# perform scaling on the filtered descriptors
+
+scaler = MinMaxScaler() # can be changed to StandardScaler but MinMaxScaler is used for better comparability
+
+for desc in desc_list:
+    if desc in knime_filtered.columns:
+        knime_filtered[desc] = scaler.fit_transform(knime_filtered[desc].values.reshape(-1, 1))
+
 # get all columns back to dataframe that where not passed by KNIME and 
 # create new columns for filtered descriptors
 knime_filtered['SMILES'] = tested_molecules['SMILES']
@@ -83,6 +91,7 @@ knime_filtered['counter_descriptors'] = knime_filtered.apply(
     axis=1
 )
 knime_filtered['all_descriptors'] = knime_filtered['physiochemical_descriptors'] + knime_filtered['counter_descriptors']
+
 
 # create X_train, X_test, y_train and y_test datasets
 
