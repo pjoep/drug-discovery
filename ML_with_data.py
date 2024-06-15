@@ -91,7 +91,8 @@ x_sets_list = ['physiochemical_descriptors', 'counter_descriptors', 'all_descrip
 y_sets_list = ['PKM2_inhibition', 'ERK2_inhibition']
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.neural_network import MLPRegressor
+from sklearn.svm import SVC
+#from sklearn.neural_network import MLPRegressor
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import mean_squared_error
 #from xgboost import XGBRegressor
@@ -100,14 +101,18 @@ from sklearn.metrics import classification_report, accuracy_score
 # Default models
 models = {"nnet": MLPClassifier(random_state=42),
           "rf_class": RandomForestClassifier(n_estimators=100, random_state=42),
-          "xgb_clf": XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42)}
-        #"nnet": MLPRegressor(random_state=42)
-
+          "xgb_clf": XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42),
+          "svm": SVC(kernel='rbf', C=1.0, gamma='scale')}
+        
+        
+          #"nnet": MLPRegressor(random_state=42)
           #"nnet": MLPRegressor(random_state=42),}
           #"rf_regress": RandomForestRegressor(n_estimators=100, random_state=42),
           #"xgb_regr": XGBRegressor(use_label_encoder=False, eval_metric='logloss', random_state=42)}
           #"nnet": MLPRegressor(random_state=42)}
           #"svr": SVR(gamma='auto')}
+best_model=0
+best_accuracy=0
 scores = {}
 model_accuracy={}
 counter=0
@@ -123,13 +128,21 @@ for y_set in y_sets_list:
             y_pred = models[m].predict(x_test)
             print(counter)
             print(models[m])
-            #print("Accuracy:", accuracy_score(y_test, y_pred))
+
+            print("Accuracy:", accuracy_score(y_test, y_pred))
             #print("Classification Report:\n", classification_report(y_test, y_pred))
             #scores[f][m + "_r2_test"] = r2_score(y_test, y_pred)
             scores[m + "_mse_test"] = mean_squared_error(y_test, y_pred)
             model_accuracy[m + "_accuracy"]= accuracy_score(y_test, y_pred)
-
-
+            accuracy=accuracy_score(y_test, y_pred)
+            if accuracy> best_accuracy:
+                best_accuracy=accuracy
+                best_model=counter, m
+                best_pred=y_pred
 print('Klaar')
 print(scores)
 print(model_accuracy)
+print("best model:",best_model)
+print("best accuracy",best_accuracy)
+print(best_pred)
+print(y_test)
