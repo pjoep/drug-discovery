@@ -8,14 +8,16 @@ import rdkit
 from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 from rdkit.ML.Descriptors import MoleculeDescriptors
-from sklearn.decomposition import PCA
-from sklearn.metrics import confusion_matrix, recall_score
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+from sklearn.metrics import recall_score
+
+from sklearn.model_selection import cross_val_predict, train_test_split, cross_validate
 
 TESTED_CSV = r'tested_molecules.csv'
 KNIME_CSV = r'KNIME_filtered_descriptors.csv'
@@ -131,28 +133,29 @@ for y_set in y_sets_list:
         x_vectors = np.array([np.array(x) for x in knime_filtered[x_set]])
         y_vectors = knime_filtered[y_set].values
 
-        x_train, x_test, y_train, y_test = train_test_split(x_vectors, y_vectors, test_size=TEST_SIZE, random_state=RANDOM_STATE, shuffle=True)
+        #x_train, x_test, y_train, y_test = train_test_split(x_vectors, y_vectors, test_size=TEST_SIZE, random_state=RANDOM_STATE, shuffle=True)
+
+
+
         for counter, m in enumerate(models):
-            models[m].fit(x_train, y_train)
-            y_pred = models[m].predict(x_test)
+
+            predictions = cross_val_predict(models[m], x_vectors, y_vectors, cv=5)
+            sensitivity = recall_score(y_vectors, predictions)
             
             print(counter)
             print(models[m])
+
             #print("Classification Report:\n", classification_report(y_test, y_pred))
             #scores[f][m + "_r2_test"] = r2_score(y_test, y_pred)
-            scores[m + "_mse_test"] = mean_squared_error(y_test, y_pred)
+            scores[m + "_mse_test"] = mean_squared_error(y_vectors, predictions)
             
-            print(y_test)
-            print(y_pred)
-
-            sensitivity=recall_score(y_test, y_pred)
             model_sensitivity[m + "_sensitivity"]= sensitivity
             print("Sensitivity:", sensitivity)
             
             if sensitivity> best_sensitivity:
                 best_sensitivity=sensitivity
                 best_model=counter, m
-                best_pred=y_pred
+                best_pred=predictions
                 
 print('Klaar')
 print(scores)
@@ -160,4 +163,4 @@ print(model_sensitivity)
 print("best model:",best_model)
 print("best sensitivity",best_sensitivity)
 print(best_pred)
-print(y_test)
+print(y_vectors)
