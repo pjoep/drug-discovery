@@ -9,14 +9,17 @@ from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 from rdkit.ML.Descriptors import MoleculeDescriptors
 from sklearn.decomposition import PCA
+from sklearn.metrics import confusion_matrix
+
 import matplotlib.pyplot as plt
 import seaborn as sns
+from imblearn.metrics import sensitivity_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
-TESTED_CSV = r'C:\\Users\\eigenaar\\Documents\\8CC00\\tested_molecules.csv'
-KNIME_CSV = r'C:\\Users\\eigenaar\\Documents\\8CC00\\KNIME_filtered_descriptors.csv'
+TESTED_CSV = r'tested_molecules.csv'
+KNIME_CSV = r'KNIME_filtered_descriptors.csv'
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
 
@@ -37,8 +40,12 @@ calc = MoleculeDescriptors.MolecularDescriptorCalculator(desc_list)
 
 # set up rdkit molecules and calculate fingerprints
 tested_molecules['rdkit_mol'] = tested_molecules['SMILES'].apply(lambda x: rdkit.Chem.MolFromSmiles(x))
+
+
 tested_molecules['ECFP4'] = tested_molecules['rdkit_mol'].apply(lambda x: list(AllChem.GetMorganFingerprintAsBitVect(x, 2, nBits=2048)))
 tested_molecules['ECFP6'] = tested_molecules['rdkit_mol'].apply(lambda x: list(AllChem.GetMorganFingerprintAsBitVect(x, 3, nBits=2048)))
+
+
 tested_molecules['MACCS'] = tested_molecules['rdkit_mol'].apply(lambda x: list(AllChem.GetMACCSKeysFingerprint(x)))
 
 # calculate 2D descriptors
@@ -98,6 +105,8 @@ from sklearn.metrics import mean_squared_error
 #from xgboost import XGBRegressor
 from xgboost import XGBClassifier
 from sklearn.metrics import classification_report, accuracy_score
+
+
 # Default models
 models = {"nnet": MLPClassifier(random_state=42),
           "rf_class": RandomForestClassifier(n_estimators=100, random_state=42),
@@ -111,38 +120,45 @@ models = {"nnet": MLPClassifier(random_state=42),
           #"xgb_regr": XGBRegressor(use_label_encoder=False, eval_metric='logloss', random_state=42)}
           #"nnet": MLPRegressor(random_state=42)}
           #"svr": SVR(gamma='auto')}
+
 best_model=0
-best_accuracy=0
+best_sensitivity=0
 scores = {}
-model_accuracy={}
+model_sensitivity={}
 counter=0
+
 for y_set in y_sets_list:
     for x_set in x_sets_list:
         x_vectors = np.array([np.array(x) for x in knime_filtered[x_set]])
         y_vectors = knime_filtered[y_set].values
 
         x_train, x_test, y_train, y_test = train_test_split(x_vectors, y_vectors, test_size=TEST_SIZE, random_state=RANDOM_STATE, shuffle=True)
-        for m in models:
-            counter= counter+1
+        for counter, m in enumerate(models):
             models[m].fit(x_train, y_train)
             y_pred = models[m].predict(x_test)
+            
             print(counter)
             print(models[m])
-
-            print("Accuracy:", accuracy_score(y_test, y_pred))
             #print("Classification Report:\n", classification_report(y_test, y_pred))
             #scores[f][m + "_r2_test"] = r2_score(y_test, y_pred)
             scores[m + "_mse_test"] = mean_squared_error(y_test, y_pred)
-            model_accuracy[m + "_accuracy"]= accuracy_score(y_test, y_pred)
-            accuracy=accuracy_score(y_test, y_pred)
-            if accuracy> best_accuracy:
-                best_accuracy=accuracy
+            
+            print(y_test)
+            print(y_pred)
+
+            sensitivity=sensitivity_score(y_test, y_pred)
+            model_sensitivity[m + "_sensitivity"]= sensitivity
+            print("Sensitivity:", sensitivity)
+            
+            if sensitivity> best_sensitivity:
+                best_sensitivity=sensitivity
                 best_model=counter, m
                 best_pred=y_pred
+                
 print('Klaar')
 print(scores)
-print(model_accuracy)
+print(model_sensitivity)
 print("best model:",best_model)
-print("best accuracy",best_accuracy)
+print("best sensitivity",best_sensitivity)
 print(best_pred)
 print(y_test)
