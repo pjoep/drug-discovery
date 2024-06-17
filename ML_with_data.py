@@ -9,11 +9,10 @@ from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 from rdkit.ML.Descriptors import MoleculeDescriptors
 from sklearn.decomposition import PCA
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, recall_score
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-from imblearn.metrics import sensitivity_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -146,7 +145,7 @@ for y_set in y_sets_list:
             print(y_test)
             print(y_pred)
 
-            sensitivity=sensitivity_score(y_test, y_pred)
+            sensitivity=recall_score(y_test, y_pred)
             model_sensitivity[m + "_sensitivity"]= sensitivity
             print("Sensitivity:", sensitivity)
             
