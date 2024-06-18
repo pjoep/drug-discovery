@@ -22,9 +22,10 @@ from xgboost import XGBClassifier
 from sklearn.metrics import classification_report, accuracy_score, mean_squared_error
 
 TESTED_CSV = r'tested_molecules.csv'
-KNIME_CSV = r'KNIME_filtered_descriptors.csv'
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
+DUPLICATION_TIMES = 5
+KNIME_CSV = r'KNIME_filtered_descriptors.csv' #change to right duplication time!!
 
 #%%
 ''' load dataset to dataframe and calculate descriptors '''
@@ -35,7 +36,7 @@ rows_to_duplicate_PKM = tested_molecules[tested_molecules['PKM2_inhibition'].eq(
 rows_to_duplicate_ERK = tested_molecules[tested_molecules['ERK2_inhibition'].eq(1)]
 rows_to_duplicate = pd.concat([rows_to_duplicate_PKM, rows_to_duplicate_ERK], ignore_index=True)
 
-duplicate_times = 5
+duplicate_times = DUPLICATION_TIMES
 duplicate_rows = pd.concat([rows_to_duplicate]*duplicate_times, ignore_index=True)
 
 tested_molecules = pd.concat([tested_molecules, duplicate_rows], ignore_index=True)
