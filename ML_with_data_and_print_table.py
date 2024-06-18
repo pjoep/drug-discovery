@@ -25,7 +25,7 @@ import copy
 TESTED_CSV = r'tested_molecules.csv'
 RANDOM_STATE = 42
 TEST_SIZE = 0.01
-DUPLICATION_TIMES = 1 #options are 1,2,3,4 5, 10 or None
+DUPLICATION_TIMES = 1 #options are 1,2,3,4,5,10,20 or None
 #KNIME_CSV = f'KNIME_filtered_descriptors_{DUPLICATION_TIMES}x_duplicate.csv' #change to right duplication time!!
 KNIME_CSV = 'KNIME_filtered_descriptors.csv' #use when no duplication is needed
 #%%
@@ -79,7 +79,7 @@ knime_filtered = pd.read_csv(KNIME_CSV)
 
 # perform scaling on the filtered descriptors
 
-scaler = MinMaxScaler() # can be changed to StandardScaler but MinMaxScaler is used for better comparability
+scaler = MinMaxScaler() # can be changed to StandardScaler but MinMaxScaler is used
 
 for desc in desc_list:
     if desc in knime_filtered.columns:
@@ -103,7 +103,7 @@ knime_filtered['counter_descriptors'] = knime_filtered.apply(
 )
 knime_filtered['all_descriptors'] = knime_filtered['physiochemical_descriptors'] + knime_filtered['counter_descriptors']
 
-
+print(len(knime_filtered.index))
 
 #%%
 # create X_train, X_test, y_train and y_test datasets
@@ -118,19 +118,20 @@ models = {"nnet": MLPClassifier(random_state=RANDOM_STATE, max_iter=100000, earl
         
 KFold = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
 
+### seperate some positive molecules from the rest
 knime_filtered_seperate_pos = pd.DataFrame()
 smiles_list = []
 for i in knime_filtered.index:
     if i in range(1093, 1117):
         smiles_list.append(knime_filtered['SMILES'][i])
     if knime_filtered['SMILES'][i] in smiles_list:  
-        knime_filtered_seperate_single = knime_filtered.loc[[i]]
-        knime_filtered_seperate_pos = pd.concat([knime_filtered_seperate_pos, knime_filtered_seperate_single])
+       knime_filtered_seperate_single = knime_filtered.loc[[i]]
+       knime_filtered_seperate_pos = pd.concat([knime_filtered_seperate_pos, knime_filtered_seperate_single])
 
 for index in knime_filtered_seperate_pos.index:
-    print(index)
-#    knime_filtered.drop(index, inplace=True)
+   knime_filtered.drop(index, inplace=True)
 
+##### duplicate check
 smiles_list = []
 for index in knime_filtered_seperate_pos.index:
     smiles_list.append(knime_filtered_seperate_pos['SMILES'][index])
@@ -141,7 +142,6 @@ for index in knime_filtered.index:
     if knime_filtered['SMILES'][index] in smiles_list:
         duplicates.append(index)
 
-print(duplicates)
 print(len(duplicates))
 
 #%%
@@ -166,20 +166,6 @@ for y_set in y_sets_list:
 
         for m in models:
             counter= counter+1
-
-            #cross-valid
-            #scores, trained_model = cross_validate(models[m], x_vectors, y_vectors, cv=KFold, n_jobs=-1, return_estimator=True)
-            #sensitivity = recall_score(y_vectors, predictions)
-            #specificity = recall_score(y_vectors, predictions, pos_label=0)
-            #predictions_test_test = models[m].predict(x_test_test)
-            #sensitivity_test_test = recall_score(y_test_test, predictions_test_test)
-            #specificity_test_test = recall_score(y_test_test, predictions_test_test, pos_label=0)
-            #scores[y_set][x_set][m + "_sensitivity"] = sensitivity
-            #scores[y_set][x_set][m + "_specificity"] = specificity
-            #scores[y_set][x_set][m + "_sensitivity_test_test"] = sensitivity_test_test
-            #cores[y_set][x_set][m + "_specificity_test_test"] = specificity_test_test
-            #scores[y_set][x_set][m + "_mse_test"] = mean_squared_error(y_vectors, predictions)
-            #scores[y_set][x_set][m + "_mse_test_test"] = mean_squared_error(y_test_test, predictions_test_test)
             
             #train-test
             models[m].fit(x_train, y_train)
@@ -189,12 +175,8 @@ for y_set in y_sets_list:
             specificity = recall_score(y_test, predictions, pos_label=0)
             sensitivity_test_test = recall_score(y_test_test, predictions_test_test)
             specificity_test_test = recall_score(y_test_test, predictions_test_test, pos_label=0)
-            scores[y_set][x_set][m + "_mse_test"] = mean_squared_error(y_test, predictions)
-            scores[y_set][x_set][m + "_mse_test_test"] = mean_squared_error(y_test_test, predictions_test_test)
-            scores[y_set][x_set][m + "_sensitivity"] = sensitivity
-            scores[y_set][x_set][m + "_specificity"] = specificity
-            scores[y_set][x_set][m + "_sensitivity_test_test"] = sensitivity_test_test
-            scores[y_set][x_set][m + "_specificity_test_test"] = specificity_test_test
+            scores[y_set][x_set][m + "_sensitivity"] = sensitivity_test_test
+            scores[y_set][x_set][m + "_specificity"] = specificity_test_test
 
             print(counter)
             
@@ -202,7 +184,7 @@ for y_set in y_sets_list:
                 if sensitivity_test_test> best_sensitivity_PKM:
                     best_sensitivity_PKM=sensitivity_test_test
                     best_model_PKM=copy.deepcopy(models[m])
-                    best_descriptors_ERK=copy.deepcopy(x_set)
+                    best_descriptors_PKM=copy.deepcopy(x_set)
 
             if y_set == 'ERK2_inhibition':        
                 if sensitivity_test_test> best_sensitivity_ERK:
@@ -215,6 +197,8 @@ for y_set in y_sets_list:
 print('Klaar')
 print(best_model_ERK)
 print(best_model_PKM)
+print(best_descriptors_ERK)
+print(best_descriptors_PKM)
 
 #%%
 # Convert nested dictionary to a list of records
@@ -233,18 +217,12 @@ scores_df = scores_df.pivot(index='x_set', columns='y_set')
 
 # Flatten the MultiIndex columns
 scores_df.columns = ['_'.join(col).strip() for col in scores_df.columns.values]
-mse_df = scores_df[[col for col in scores_df.columns if 'mse_test' in col]]
-mse_test_test_df = scores_df[[col for col in scores_df.columns if 'mse_test_test' in col]]
-sensitivity_df = scores_df[[col for col in scores_df.columns if 'sensitivity' in col]]
-specificity_df = scores_df[[col for col in scores_df.columns if 'specificity' in col]]
-sensitivity_test_test_df = scores_df[[col for col in scores_df.columns if 'sensitivity_test_test' in col]]
-specificity_test_test_df = scores_df[[col for col in scores_df.columns if 'specificity_test_test' in col]]
-
-
 
 #%%
 
 scores_df
+
+scores_df.to_csv(f'scores_df_for_{DUPLICATION_TIMES}x_duplicates.csv', index=True)
 
 
 # %%
@@ -254,6 +232,33 @@ untested_molecules['rdkit_mol'] = untested_molecules['SMILES'].apply(lambda x: r
 untested_molecules['ECFP4'] = untested_molecules['rdkit_mol'].apply(lambda x: list(AllChem.GetMorganFingerprintAsBitVect(x, 2, nBits=2048)))
 untested_molecules['ECFP6'] = untested_molecules['rdkit_mol'].apply(lambda x: list(AllChem.GetMorganFingerprintAsBitVect(x, 3, nBits=2048)))
 untested_molecules['MACCS'] = untested_molecules['rdkit_mol'].apply(lambda x: list(AllChem.GetMACCSKeysFingerprint(x)))
+
+
+
+calc = MoleculeDescriptors.MolecularDescriptorCalculator(desc_list)
+
+# calculate 2D descriptors
+desc = [list(calc.CalcDescriptors(x)) for x in untested_molecules['rdkit_mol']]
+
+# add 2D descriptors to dataframe
+for descriptor in desc_list:
+    untested_molecules[descriptor] = [x[desc_list.index(descriptor)] for x in desc]
+
+
+for desc in desc_list:
+    if desc in knime_filtered.columns:
+        untested_molecules[desc] = scaler.fit_transform(untested_molecules[desc].values.reshape(-1, 1))
+
+untested_molecules['physiochemical_descriptors'] = untested_molecules.apply(
+    lambda row: [row[desc] for desc in phc_desc_list if desc in knime_filtered.columns], 
+    axis=1
+)
+untested_molecules['counter_descriptors'] = untested_molecules.apply(
+    lambda row: [row[desc] for desc in count_desc_list if desc in knime_filtered.columns], 
+    axis=1
+)
+untested_molecules['all_descriptors'] = untested_molecules['physiochemical_descriptors'] + untested_molecules['counter_descriptors']
+
 
 #%%
 

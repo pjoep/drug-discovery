@@ -1,0 +1,7 @@
+x_set,nnet_sensitivity_ERK2_inhibition,nnet_sensitivity_PKM2_inhibition,nnet_specificity_ERK2_inhibition,nnet_specificity_PKM2_inhibition,rf_class_sensitivity_ERK2_inhibition,rf_class_sensitivity_PKM2_inhibition,rf_class_specificity_ERK2_inhibition,rf_class_specificity_PKM2_inhibition,xgb_clf_sensitivity_ERK2_inhibition,xgb_clf_sensitivity_PKM2_inhibition,xgb_clf_specificity_ERK2_inhibition,xgb_clf_specificity_PKM2_inhibition
+ECFP4,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0,0.0,0.14285714285714285,1.0,1.0
+ECFP6,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0
+MACCS,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0
+all_descriptors,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0
+counter_descriptors,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0,0.0625,0.0,1.0,1.0
+physiochemical_descriptors,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0
